@@ -1,0 +1,11 @@
+{
+  "dataset": "transactions",
+  "checks": [
+    {"type": "required_columns", "columns": ["transaction_id", "amount", "event_time"]},
+    {"type": "row_count", "minimum": 1},
+    {"type": "unique_rate", "column": "transaction_id", "minimum": 0.999},
+    {"type": "null_rate", "column": "amount", "maximum": 0.001},
+    {"type": "range", "column": "amount", "low": 0, "high": 1000000},
+    {"type": "freshness", "column": "event_time", "max_age_minutes": 60}
+  ]
+}
