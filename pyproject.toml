@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-quality-observability"
+version = "0.2.0"
+description = "Declarative data-contract validation and observability CLI"
+requires-python = ">=3.11"
+dependencies = ["pandas>=2.2", "pyarrow>=16.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+data-quality = "dq.cli:main"
+
+[tool.setuptools]
+py-modules = ["quality"]
+packages = ["dq"]
+
+[tool.ruff]
+line-length = 100
