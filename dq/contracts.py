@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
-from pathlib import Path
 import json
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -118,6 +118,6 @@ def run_contract(
         passed=all(result.passed for result in results),
         rows=len(frame),
         columns=len(frame.columns),
-        checked_at=datetime.now(timezone.utc).isoformat(),
+        checked_at=datetime.now(UTC).isoformat(),
         checks=tuple(results),
     )

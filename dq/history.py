@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
 import json
 import sqlite3
 import threading
+from pathlib import Path
 
 from dq.contracts import ContractResult
-
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS quality_runs (
