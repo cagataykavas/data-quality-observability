@@ -6,6 +6,15 @@
     {"type": "unique_rate", "column": "transaction_id", "minimum": 0.999},
     {"type": "null_rate", "column": "amount", "maximum": 0.001},
     {"type": "range", "column": "amount", "low": 0, "high": 1000000},
-    {"type": "freshness", "column": "event_time", "max_age_minutes": 60}
+    {"type": "freshness", "column": "event_time", "max_age_minutes": 60},
+    {
+      "type": "temporal_coverage",
+      "column": "event_time",
+      "window_minutes": 180,
+      "bucket_minutes": 60,
+      "allowed_lateness_minutes": 15,
+      "minimum_rows_per_bucket": 1,
+      "minimum_coverage": 1.0
+    }
   ]
 }
