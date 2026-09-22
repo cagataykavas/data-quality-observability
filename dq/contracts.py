@@ -8,7 +8,14 @@ from typing import Any
 
 import pandas as pd
 
-from quality import CheckResult, freshness, null_rate, range_check, unique_rate
+from quality import (
+    CheckResult,
+    freshness,
+    null_rate,
+    range_check,
+    temporal_coverage,
+    unique_rate,
+)
 
 
 @dataclass(frozen=True)
@@ -74,9 +81,7 @@ def run_contract(
             _require_column(frame, str(column))
             if "low" not in spec or "high" not in spec:
                 raise ContractError("range check requires low and high")
-            results.append(
-                range_check(frame, str(column), float(spec["low"]), float(spec["high"]))
-            )
+            results.append(range_check(frame, str(column), float(spec["low"]), float(spec["high"])))
         elif check_type == "freshness":
             _require_column(frame, str(column))
             results.append(
@@ -85,6 +90,23 @@ def run_contract(
                     str(column),
                     now,
                     float(spec.get("max_age_minutes", 60)),
+                )
+            )
+        elif check_type == "temporal_coverage":
+            _require_column(frame, str(column))
+            required = ("window_minutes", "bucket_minutes")
+            if any(name not in spec for name in required):
+                raise ContractError("temporal_coverage requires window_minutes and bucket_minutes")
+            results.append(
+                temporal_coverage(
+                    frame,
+                    str(column),
+                    now,
+                    window_minutes=spec["window_minutes"],
+                    bucket_minutes=spec["bucket_minutes"],
+                    allowed_lateness_minutes=spec.get("allowed_lateness_minutes", 0),
+                    minimum_rows_per_bucket=spec.get("minimum_rows_per_bucket", 1),
+                    minimum_coverage=float(spec.get("minimum_coverage", 1.0)),
                 )
             )
         elif check_type == "row_count":

@@ -39,7 +39,16 @@ That distinction matters in CI and orchestration: a broken configuration is not 
     {"type": "unique_rate", "column": "transaction_id", "minimum": 0.999},
     {"type": "null_rate", "column": "amount", "maximum": 0.001},
     {"type": "range", "column": "amount", "low": 0, "high": 1000000},
-    {"type": "freshness", "column": "event_time", "max_age_minutes": 60}
+    {"type": "freshness", "column": "event_time", "max_age_minutes": 60},
+    {
+      "type": "temporal_coverage",
+      "column": "event_time",
+      "window_minutes": 180,
+      "bucket_minutes": 60,
+      "allowed_lateness_minutes": 15,
+      "minimum_rows_per_bucket": 1,
+      "minimum_coverage": 1.0
+    }
   ]
 }
 ```
@@ -101,6 +110,13 @@ data-quality history \
 - uniqueness-rate thresholds;
 - numeric range constraints;
 - timestamp freshness/SLA checks.
+- watermark-aware temporal coverage and minimum partition-volume checks.
+
+`temporal_coverage` evaluates only fully mature UTC buckets. Its evidence lists
+the exact underfilled bucket starts, expected and covered counts, invalid
+timestamps, and future-dated records. This catches internal partition gaps that
+a simple "newest record" freshness check cannot see, while
+`allowed_lateness_minutes` avoids alerting on an in-flight final bucket.
 
 The runner is deliberately small and extensible: additional checks can be added without changing the contract execution flow.
 
@@ -150,3 +166,11 @@ flowchart TD
 ## Interview topics demonstrated
 
 `data contracts` · `data quality` · `freshness SLA` · `schema validation` · `pipeline gates` · `observability` · `quarantine` · `data lineage` · `Parquet` · `CI/CD for data`
+
+## Temporal coverage limits
+
+Coverage is aligned to UTC wall-clock buckets and assumes event timestamps use
+the same business calendar. It does not infer exchange holidays, source-specific
+maintenance windows, daylight-saving business rules, or late-event
+reconciliation after a run has been recorded. Those policies should be explicit
+calendar inputs rather than silently learned from recent data.
