@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
 from pathlib import Path
 
 import pandas as pd
 
 from dq.contracts import ContractError, load_contract, run_contract
-from dq.history import QualityHistory
+from dq.history import HistoryIntegrityError, QualityHistory
 
 
 def read_frame(path: str | Path) -> pd.DataFrame:
@@ -42,8 +43,13 @@ def command_check(args: argparse.Namespace) -> int:
 
 
 def command_history(args: argparse.Namespace) -> int:
-    history = QualityHistory(args.database)
-    print(json.dumps(history.recent(args.dataset, args.limit), indent=2))
+    try:
+        history = QualityHistory(args.database)
+        rows = history.recent(args.dataset, args.limit)
+    except (HistoryIntegrityError, OSError, sqlite3.DatabaseError) as exc:
+        print(json.dumps({"verified": False, "error": str(exc)}, indent=2))
+        return 2
+    print(json.dumps(rows, indent=2))
     return 0
 
 
