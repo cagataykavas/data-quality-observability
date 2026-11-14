@@ -1,6 +1,6 @@
 # Data Quality & Observability Gate
 
-A declarative **data-contract validator** designed to sit in front of ML, analytics and data-engineering pipelines.
+A declarative **data-contract validator** designed to sit in front of ML, analytics and data-engineering pipelines. Contracts are compiled and fingerprinted before source data is loaded.
 
 Instead of burying assumptions inside notebooks, a dataset gets a versionable JSON contract. The CLI validates CSV/Parquet data, emits a machine-readable report, persists run history and returns a pipeline-friendly exit code.
 
@@ -27,6 +27,16 @@ flowchart LR
 - **2** — configuration/input error such as malformed contract or unsupported file format.
 
 That distinction matters in CI and orchestration: a broken configuration is not the same incident as a real deterioration in source data.
+
+### Contract admission
+
+Before reading a potentially large dataset, the CLI now compiles the JSON contract under a
+bounded, fail-closed policy. It rejects duplicate JSON keys, non-finite numbers, unknown or
+repeated checks, unexpected fields, invalid thresholds, reversed ranges and ambiguous column
+lists. Defaults are materialized before canonical SHA-256 calculation, so semantically equivalent
+contracts receive the same identity. Every report and history record carries that digest, and
+file reports are written with flush + fsync + atomic replacement so readers never observe a
+partially written report.
 
 ## Example contract
 
@@ -72,6 +82,7 @@ data-quality history \
 ```json
 {
   "dataset": "transactions",
+  "contract_sha256": "<canonical-contract-sha256>",
   "passed": false,
   "rows": 250000,
   "columns": 17,
