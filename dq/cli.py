@@ -2,12 +2,37 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import tempfile
 from pathlib import Path
 
 import pandas as pd
 
 from dq.contracts import ContractError, load_contract, run_contract
 from dq.history import QualityHistory
+
+
+def _write_atomically(path: str | Path, content: str) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=target.parent,
+            prefix=f".{target.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+            temporary_path = Path(handle.name)
+        os.replace(temporary_path, target)
+    finally:
+        if temporary_path is not None and temporary_path.exists():
+            temporary_path.unlink()
 
 
 def read_frame(path: str | Path) -> pd.DataFrame:
@@ -22,8 +47,8 @@ def read_frame(path: str | Path) -> pd.DataFrame:
 
 def command_check(args: argparse.Namespace) -> int:
     try:
-        frame = read_frame(args.data)
         contract = load_contract(args.contract)
+        frame = read_frame(args.data)
         result = run_contract(frame, contract)
     except (ValueError, ContractError, OSError, json.JSONDecodeError) as exc:
         print(json.dumps({"passed": False, "error": str(exc)}, indent=2))
@@ -36,7 +61,7 @@ def command_check(args: argparse.Namespace) -> int:
 
     rendered = json.dumps(payload, indent=2)
     if args.output:
-        Path(args.output).write_text(rendered + "\n", encoding="utf-8")
+        _write_atomically(args.output, rendered + "\n")
     print(rendered)
     return 0 if result.passed else 1
 
